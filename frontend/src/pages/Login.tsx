@@ -79,6 +79,16 @@ export default function Login() {
           <p className="text-xs text-center text-gray-500 mt-4">
             🔐 Protected by AES‑256 encryption
           </p>
+           {/* ✅ Signup link */}
+        <p className="text-sm text-center mt-6 text-gray-400">
+          Don’t have an account?{" "}
+          <span
+            className="text-primary cursor-pointer"
+            onClick={() => navigate("/signup")}
+          >
+            Sign Up
+          </span>
+        </p>
         </form>
       </div>
 

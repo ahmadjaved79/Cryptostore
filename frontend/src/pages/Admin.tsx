@@ -142,35 +142,154 @@ const [logs, setLogs] = useState<any[]>([]); // logs can stay any for now
         )}
 
         {/* AUDIT LOGS */}
-        {activeTab === "logs" && (
-          <>
-            <h1 className="text-2xl font-bold mb-4">🧾 Audit Logs</h1>
-            <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-green-400">
-                  <tr>
-                    <th className="text-left p-2">User</th>
-                    <th className="text-left p-2">Action</th>
-                    <th className="text-left p-2">File</th>
-                    <th className="text-left p-2">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map((log, i) => (
-                    <tr key={i} className="border-t border-gray-800">
-                      <td className="p-2">{log.users?.email}</td>
-                      <td className="p-2">{log.action}</td>
-                      <td className="p-2">{log.files?.filename}</td>
-                      <td className="p-2">
-                        {new Date(log.created_at).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+{activeTab === "logs" && (
+  <>
+    {/* Header */}
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+      <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
+        🧾 Audit Logs
+      </h1>
+
+      <div className="flex items-center gap-2">
+        {/* Search */}
+        <div className="relative">
+          <input
+            type="search"
+            placeholder="Search logs..."
+            className="pl-9 pr-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-400"
+            onChange={(e) =>
+              (window.__auditQuery = e.target.value.toLowerCase())
+            }
+          />
+          <svg
+            className="w-4 h-4 absolute left-3 top-2.5 text-gray-400"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
+
+        {/* Export */}
+        <button
+          onClick={() => {
+            const csv = [
+              "user,action,file,time",
+              ...logs.map(
+                (l) =>
+                  `${l.users?.email || "system"},${l.action},${
+                    l.files?.filename || "-"
+                  },${new Date(l.created_at).toLocaleString()}`
+              ),
+            ].join("\n");
+
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "audit_logs.csv";
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="px-3 py-2 rounded-lg bg-green-400 text-black text-sm font-medium"
+        >
+          Export CSV
+        </button>
+      </div>
+    </div>
+
+    {/* Table */}
+    <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-800 text-gray-400">
+          <tr>
+            <th className="p-3 text-left">User</th>
+            <th className="p-3 text-left">Action</th>
+            <th className="p-3 text-left">File</th>
+            <th className="p-3 text-left">Time</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {logs
+            .filter((log) => {
+              const q = window.__auditQuery || "";
+              if (!q) return true;
+              return (
+                log.users?.email?.toLowerCase().includes(q) ||
+                log.action.toLowerCase().includes(q) ||
+                log.files?.filename?.toLowerCase().includes(q)
+              );
+            })
+            .map((log, i) => {
+              const diff =
+                Date.now() - new Date(log.created_at).getTime();
+              const mins = Math.floor(diff / 60000);
+              const timeAgo =
+                mins < 1
+                  ? "just now"
+                  : mins < 60
+                  ? `${mins} min ago`
+                  : `${Math.floor(mins / 60)} hr ago`;
+
+              return (
+                <tr
+                  key={i}
+                  className={`border-t border-gray-800 hover:bg-gray-800 transition ${
+                    i % 2 === 0 ? "" : "bg-white/5"
+                  }`}
+                >
+                  <td className="p-3 text-gray-100">
+                    {log.users?.email || "System"}
+                  </td>
+
+                  <td className="p-3">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-semibold
+                        ${
+                          log.action.includes("upload")
+                            ? "bg-green-500/15 text-green-400"
+                            : log.action.includes("download")
+                            ? "bg-cyan-500/15 text-cyan-400"
+                            : log.action.includes("delete")
+                            ? "bg-red-500/15 text-red-400"
+                            : log.action.includes("share")
+                            ? "bg-purple-500/15 text-purple-400"
+                            : "bg-gray-500/15 text-gray-300"
+                        }`}
+                    >
+                      {log.action}
+                    </span>
+                  </td>
+
+                  <td className="p-3 text-gray-200 truncate max-w-xs">
+                    {log.files?.filename || "—"}
+                  </td>
+
+                  <td className="p-3 text-gray-400">
+                    <div>{new Date(log.created_at).toLocaleString()}</div>
+                    <div className="text-xs text-gray-500">{timeAgo}</div>
+                  </td>
+                </tr>
+              );
+            })}
+
+          {logs.length === 0 && (
+            <tr>
+              <td colSpan={4} className="p-6 text-center text-gray-400">
+                No audit logs available
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </>
+)}
+
 
          {shareFile && (
   <ShareModal

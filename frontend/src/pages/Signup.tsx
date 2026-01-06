@@ -128,6 +128,15 @@ export default function Signup() {
         <p className="text-xs text-center text-gray-500 mt-4">
           🔐 End‑to‑end encrypted setup
         </p>
+         <p className="text-sm text-center mt-6 text-gray-400">
+          Already if you have an account,then{" "}  
+          <span
+            className="text-primary cursor-pointer"
+            onClick={() => navigate("/login")}
+          >
+           Login
+          </span>
+        </p>
       </form>
     </div>
   );
